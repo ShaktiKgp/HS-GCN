@@ -1,8 +1,9 @@
 import math
 import numpy as np
 import pickle
+from tqdm.auto import tqdm
 
-f_para = open('../para/movie_load.para', 'rb')
+f_para = open('./para/movie_load.para', 'rb')
 para_load = pickle.load(f_para)
 user_num = para_load['user_num']  # total number of users
 item_num = para_load['item_num']  # total number of items
@@ -37,7 +38,7 @@ def descend_sort(array):
     return -np.sort(-array)
 
 
-for user_id, row in enumerate(train_matrix):
+for user_id, row in enumerate(tqdm(train_matrix)):
     can_item_ids = item_ids[~np.array(row, dtype=bool)]  # the id list of test items
     I = hash_codes[can_item_ids + user_num, :]
     u = hash_codes[user_id, :]
@@ -51,7 +52,7 @@ for user_id, row in enumerate(train_matrix):
             dcg = dcg + 1 / math.log(i + 2)
     P += hit_num / eva_size
     HR += hit_num
-    NDCG += dcg / IDCG(np.sum(descend_sort(test_matrix[user_id])[0:eva_size]))
+    NDCG += dcg / (IDCG(np.sum(descend_sort(test_matrix[user_id])[0:eva_size]))+0.00000001)
 
 P = P / user_num
 HR = HR / np.sum(test_matrix)

@@ -1,6 +1,8 @@
 import pickle
+from abc import ABC
+
 import torch
-import math
+from tqdm.auto import tqdm, trange
 import numpy as np
 from HSGCN_model import HSGCN
 from torch_geometric.data import Data
@@ -20,14 +22,16 @@ num_node_features = 64
 x = torch.tensor(np.random.normal(scale=1, size=[user_num + item_num, num_node_features]), dtype=torch.float).to(device)
 x.requires_grad = True
 
+
 class LBSign(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input):
-        return torch.sign(input)
+    def forward(ctx, *_input):
+        return torch.sign(_input[0])
 
     @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output.clamp_(-1, 1)
+    def backward(ctx, *grad_output):
+        return grad_output[0].clamp_(-1, 1)
+
 
 class Net(torch.nn.Module):
     def __init__(self):
@@ -35,19 +39,21 @@ class Net(torch.nn.Module):
         self.conv1 = HSGCN()
         self.conv2 = HSGCN()
         self.sign = LBSign.apply
-    def forward(self, data, beta=1, trainning=True):
-        x, edge_index = data.x, data.edge_index
-        x = torch.tanh(x)
-        if trainning:
-            h_0 = x
-            h = self.sign(x)
+
+    def forward(self, _data, training=True):
+        _x, _edge_index = _data.x, _data.edge_index
+        _x = torch.tanh(_x)
+        if training:
+            h_0 = _x
+            h = self.sign(_x)
         else:
-            h_0 = torch.sign(x)
+            h_0 = torch.sign(_x)
             h = h_0
-        h_1 = self.conv1(h_0, edge_index)
-        h_2 = self.conv2(h_1, edge_index)
+        h_1 = self.conv1(h_0, _edge_index)
+        h_2 = self.conv2(h_1, _edge_index)
         h_2 = F.dropout(h_2, p=0.1, training=self.training)
         return h, h_2
+
 
 model = Net().to(device)
 data = Data(x=x, edge_index=edge_index.t().contiguous()).to(device)
@@ -56,12 +62,12 @@ optimizer = torch.optim.Adam([{'params': model.parameters()},
                               {'params': x}],
                              lr=learning_rate, weight_decay=1e-7)
 
-batch_size = 1000
+batch_size = 100
 step_threshold = 600
 alpha = 0.2
 lamb1 = 0.1
 lamb2 = 0.5
-epoch_max = 2
+epoch_max = 15
 data_block = 3
 
 train_i = torch.empty(0).long()
@@ -81,11 +87,12 @@ train_loader = D.DataLoader(
 )
 
 model.train()
-for epoch in range(epoch_max):
+for epoch in trange(epoch_max):
 
     running_loss = 0.0
 
-    for step, (batch_i, batch_j, batch_m) in enumerate(train_loader):
+    for step, (batch_i, batch_j, batch_m) in enumerate(tqdm(train_loader, desc="Training : Epoch => " + str(epoch+1),
+                                                            leave=False, position=0)):
         optimizer.zero_grad()
         H, out = model(data)
         embedding_i = out[batch_i.numpy(), :]
@@ -110,8 +117,8 @@ for epoch in range(epoch_max):
         optimizer.step()
 
         running_loss += loss.item()
-        if step % step_threshold == (step_threshold-1):
-            print('[%d, %5d] loss: %.5f' % (epoch + 1, step + 1, running_loss / step_threshold))
+        if step == len(train_loader):
+            print('%d loss: %.5f' % (epoch + 1, running_loss / (step+1)))
             running_loss = 0.0
 
 model.eval()
