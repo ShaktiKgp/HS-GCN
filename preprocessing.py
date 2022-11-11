@@ -126,10 +126,10 @@ train_triple = np.empty(shape=[0, 3], dtype=int)
 mtx = np.array(train_matrix.todense())
 para_index = 0
 for lh, inter in enumerate(train_ui):
-    user_id = inter[0]  # user_id is an 1-D numpy array
+    user_id = inter[0]  
     bool_index = ~np.array(mtx[user_id, :], dtype=bool)
-    can_item_ids = item_ids[bool_index]  # the id list of 0-value items
-    a1 = np.random.choice(can_item_ids, size=ratio, replace=False)  # a1 is an 1-D numpy array
+    can_item_ids = item_ids[bool_index]  
+    a1 = np.random.choice(can_item_ids, size=ratio, replace=False)  
     inter = np.expand_dims(inter, axis=0)
     inter = np.repeat(inter, repeats=ratio, axis=0)
     a1 = np.expand_dims(a1, axis=1)
