@@ -145,7 +145,6 @@ for lh, inter in enumerate(train_ui):
 
         #saving data to movie_triple
         pickle.dump(para, open('./para/movie_triple_' + str(para_index) + '.para', 'wb'))
-        print('para'+str(para_index)+' saved...')
 
         train_triple = np.empty(shape=[0, 3], dtype=int)
         para_index += 1

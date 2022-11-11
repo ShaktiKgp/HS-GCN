@@ -66,7 +66,7 @@ batch_size = 100
 alpha = 0.2
 lamb1 = 0.1
 lamb2 = 0.5
-epoch_max = 1
+epoch_max = 2
 data_block = 3
 
 train_i = torch.empty(0).long()
