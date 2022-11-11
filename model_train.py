@@ -63,11 +63,10 @@ optimizer = torch.optim.Adam([{'params': model.parameters()},
                              lr=learning_rate, weight_decay=1e-7)
 
 batch_size = 100
-step_threshold = 600
 alpha = 0.2
 lamb1 = 0.1
 lamb2 = 0.5
-epoch_max = 15
+epoch_max = 1
 data_block = 3
 
 train_i = torch.empty(0).long()
@@ -117,14 +116,14 @@ for epoch in trange(epoch_max):
         optimizer.step()
 
         running_loss += loss.item()
-        if step == len(train_loader):
+        if step == len(train_loader)-1:
             print('%d loss: %.5f' % (epoch + 1, running_loss / (step+1)))
             running_loss = 0.0
 
 model.eval()
 
 with torch.no_grad():
-    _, hash_codes = model(data, trainning=False)
+    _, hash_codes = model(data, training=False)
     hash_codes = hash_codes.int().cpu().numpy()
     print(hash_codes)
     para = {'hash_codes': hash_codes}
